@@ -1,0 +1,56 @@
+{
+    "name": "hollyit/laravel-json-api",
+    "description": "A modified/simpler approach to json-api in Laravel providing read only operations.",
+    "keywords": [
+        "hollyit",
+        "json-api",
+        "laravel"
+    ],
+    "homepage": "https://github.com/hollyit/laravel-lock",
+    "license": "MIT",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Jamie Holly",
+            "email": "jamie@hollyit.net",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^7.1.3",
+        "illuminate/support": "~5.5.0|~5.6.0|~5.7.0|~5.8.0|~6.0.0",
+        "symfony/lock": "^4.3",
+        "ext-pdo": "*"
+    },
+    "require-dev": {
+        "orchestra/testbench": "3.8.*",
+        "phpunit/phpunit": "^7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Hollyit\\LaravelJsonApi\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Hollyit\\LaravelJsonApi\\Tests\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Hollyit\\LaravelJsonApi\\LaravelJsonApiServiceProvider"
+            ],
+            "aliases": {
+                "JsonApi": "Hollyit\\LaravelJsonApi\\JsonApiFacade"
+            }
+        }
+    }
+}
