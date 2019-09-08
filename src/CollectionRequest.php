@@ -53,14 +53,11 @@ class CollectionRequest extends Request
             default:
                 abort(404);
         }
-
         $resource->withRequest($this);
-
         if (! $resource->validate()
             ->passes()) {
             throw new ValidationException($resource->validate());
         }
-
         return $resource;
     }
 }

@@ -35,18 +35,23 @@ abstract class BaseFilter
      * BaseFilter constructor.
      *
      * @param $key
-     * @param  null  $field
+     * @param  null|\Closure  $field
      */
     public function __construct($key, $field = null)
     {
         $this->key = $key;
-        $this->field = $field ?: $key;
+        if (is_callable($field)) {
+            $this->queryCallback = $field;
+            $this->field = $key;
+        } else {
+            $this->field = $field ?: $key;
+        }
     }
 
     /**
      * @param $key
      * @param  null  $field
-     * @return \Hollyit\LaravelJsonApi\Filters\BaseFilter
+     * @return static
      */
     public static function make($key, $field = null)
     {

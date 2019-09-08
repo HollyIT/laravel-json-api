@@ -45,6 +45,7 @@ class JsonApi
      */
     public function getSchema($class, $version = 1)
     {
+
         $className = is_string($class) ? $class : get_class($class);
         if (! isset($this->instances[$className.$version])) {
             $name = forward_static_call([$className, 'getApiSchema'], $version);

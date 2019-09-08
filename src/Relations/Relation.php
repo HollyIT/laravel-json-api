@@ -2,7 +2,7 @@
 
 namespace Hollyit\LaravelJsonApi\Relations;
 
-use Illuminate\Database\Eloquent\Builder;
+use Hollyit\LaravelJsonApi\Schema;
 use Hollyit\LaravelJsonApi\ResourceResponse;
 
 abstract class Relation
@@ -13,11 +13,14 @@ abstract class Relation
     /** @var string */
     public $relationName;
 
-    /** @var null|\Closure */
-    protected $queryCallback;
 
     /** @var string */
     protected $resourceClass;
+
+    /**
+     * @var \Hollyit\LaravelJsonApi\Schema
+     */
+    public $schema;
 
     /**
      * Relation constructor.
@@ -25,24 +28,16 @@ abstract class Relation
      * @param $resourceClass
      * @param $name
      * @param $relationName
+     * @param  \Hollyit\LaravelJsonApi\Schema  $schema
      */
-    public function __construct($resourceClass, $name, $relationName)
+    public function __construct($resourceClass, $name, $relationName, Schema $schema)
     {
         $this->name = $name;
         $this->relationName = $relationName;
         $this->resourceClass = $resourceClass;
+        $this->schema = $schema;
     }
 
-    /**
-     * @param $callback
-     * @return $this
-     */
-    public function queryCallback($callback)
-    {
-        $this->queryCallback = $callback;
-
-        return $this;
-    }
 
     /**
      * @return mixed
@@ -61,10 +56,18 @@ abstract class Relation
     abstract public function toArray($resource, $includes, ResourceResponse $response);
 
     /**
-     * @param  \Illuminate\Database\Eloquent\Builder  $builder
+     * @return string
      */
-    public function addInclude(Builder $builder)
+    public function getName(): string
     {
-        $builder->with($this->relationName);
+        return $this->name;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRelationName(): string
+    {
+        return $this->relationName;
     }
 }

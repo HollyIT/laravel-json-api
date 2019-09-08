@@ -2,6 +2,7 @@
 
 namespace Hollyit\LaravelJsonApi;
 
+use App\BaseSchema;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -88,7 +89,7 @@ abstract class Schema
     public function hasOne($resourceClass, $name, $relationName = null)
     {
         $relationName = $relationName ?: $name;
-        $instance = new HasOne($resourceClass, $name, $relationName);
+        $instance = new HasOne($resourceClass, $name, $relationName, $this);
         $this->addRelation($instance);
 
         return $instance;
@@ -114,7 +115,7 @@ abstract class Schema
     public function hasMany($resourceClass, $name, $relationName = null)
     {
         $relationName = $relationName ?: $name;
-        $instance = new HasMany($resourceClass, $name, $relationName);
+        $instance = new HasMany($resourceClass, $name, $relationName, $this);
         $this->addRelation($instance);
 
         return $instance;
@@ -135,7 +136,6 @@ abstract class Schema
             'attributes'    => $this->getAttributes($resource),
             'relationships' => [],
         ];
-        echo '<hr>';
         foreach ($includes as $include) {
             if ($this->hasRelation($include)) {
 
@@ -176,28 +176,75 @@ abstract class Schema
         return isset($this->relations[$relation]);
     }
 
+    public function addIncludes($includes, $builder, $prefix = '')
+    {
+        foreach ($includes as $include) {
+            echo $include.PHP_EOL;
+            if (stripos($include, '.')) {
+                echo PHP_EOL;
+                list($resource, $trail) = explode('.', $include, 2);
+                $relation = $this->getRelation($resource);
+                if ($relation) {
+                    $schema = $this->api->getSchema($relation->getResourceClass());
+                    $prefix .= $relation->getRelationName().'.';
+                    $schema->addIncludes([$trail], $builder, $prefix);
+                }
+            } elseif ($relation = $this->getRelation($include)) {
+                $relation->addInclude($builder, $prefix);
+            }
+        }
+    }
+
+    public function prepareIncludes($includes)
+    {
+        $items = [];
+        foreach ($includes as $include) {
+            Arr::set($items, $include, $include);
+        }
+
+        return $this->gatherIncludes($items, $this);
+    }
+
+    protected function gatherIncludes($includes, Schema $schema, $prefix = '')
+    {
+
+        $results = [];
+
+        foreach ($includes as $name => $children) {
+            $relation = $schema->getRelation($name);
+            if ($relation) {
+                $name = $relation->getRelationName();
+                $results[] = $prefix.$name;
+                if (is_array($children)) {
+                    $newSchema = $this->api->getSchema($relation->getResourceClass());
+                    $cResults = $this->gatherIncludes($children, $newSchema, $prefix.$name.'.');
+                    $results = array_merge($results, $cResults);
+                }
+            }
+        }
+
+        return $results;
+    }
+
     /**
      * @param  \Hollyit\LaravelJsonApi\ResourceCollectionResponse  $resource
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function createBuilder(ResourceCollectionResponse $resource)
     {
+
+        $includes = $this->prepareIncludes($resource->includes);
+
         $builder = $this->getBuilder($resource);
-        // Do includes
-        foreach ($resource->includes as $include) {
-            if ($relation = $this->getRelation($include)) {
-                $relation->addInclude($builder);
-            }
-        }
-
+        $builder->with($includes);
         foreach ($this->filters as $filter) {
-
             $filter->query($builder);
         }
 
         $this->querySort($builder, $resource->getSort());
         // do Filters
         // do Sorts
+
         return $builder;
     }
 
@@ -208,6 +255,28 @@ abstract class Schema
     protected function getBuilder($resource)
     {
         return $this->instance->newQuery();
+    }
+
+    public function loadRelation($relation, $resource, $prefix = '')
+    {
+        if (stripos($relation, '.')) {
+
+            list($resourceName, $trail) = explode('.', $relation, 2);
+            $relationInstance = $this->getRelation($resourceName);
+
+            if ($relationInstance) {
+
+                $schema = $this->api->getSchema($relationInstance->getResourceClass());
+
+                $prefix .= $relationInstance->getRelationName().'.';
+
+                $schema->loadRelation($trail, $resource, $prefix);
+            }
+        } else {
+            echo "l->$relation ";
+            $this->getRelation($relation)
+                ->loadRelation($resource, $prefix);
+        }
     }
 
     /**
@@ -260,6 +329,7 @@ abstract class Schema
     public function validate($data)
     {
         $validator = QueryValidator::make();
+        $this->getFilters();
         if (isset($data['filters'])) {
             $this->addFilterValidation($data['filters'], $validator);
         }
@@ -282,7 +352,7 @@ abstract class Schema
      */
     protected function addFilterValidation($data, QueryValidator $validator)
     {
-        $this->getFilters();
+
         foreach ($data as $key => $value) {
             if ($filter = $this->getFilter($key)) {
                 $filter->setValue($value);
@@ -349,8 +419,8 @@ abstract class Schema
             if (! $this->hasRelation($include)) {
                 throw new UnknownRelationException($include);
             }
-            if (is_array($children)) {
-                $schema = $this->api->getSchema($this->relations[$include]->getResourceClass());
+            if (is_array($children) && $schemaClass = $this->relations[$include]->getResourceClass()) {
+                $schema = $this->api->getSchema($schemaClass);
                 try {
                     $schema->validateIncludes($children);
                 } catch (UnknownRelationException $e) {

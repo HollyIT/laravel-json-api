@@ -115,7 +115,9 @@ class ResourceResponse implements Responsable
      */
     public function toResponse($request)
     {
-        return response()->json($this->toArray());
+        return response()
+            ->json($this->toArray())
+            ->header('Content-Type', 'application/vnd.api+json');
     }
 
     /**
@@ -155,14 +157,13 @@ class ResourceResponse implements Responsable
     protected function loadIncludes()
     {
         $this->validateIncludes();
-
-        $toLoad = [];
-        foreach ($this->includes as $include) {
-            if (! $this->resource->relationLoaded($include)) {
-                $toLoad[] = $include;
+        $includes = $this->schema->prepareIncludes($this->includes);
+        foreach ($includes as $key => $include) {
+            if ($this->resource->relationLoaded($include)) {
+                unset($includes[$key]);
             }
         }
-        $this->resource->load($toLoad);
+        $this->resource->load($includes);
     }
 
     public function validateIncludes()

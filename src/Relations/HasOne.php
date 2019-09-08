@@ -14,18 +14,19 @@ class HasOne extends Relation
      */
     public function toArray($resource, $includes, ResourceResponse $response)
     {
-        $items = ['data' => []];
+        $items = ['data' => null];
         $relation = $resource->getRelation($this->relationName);
-        $schema = $response->api->getSchema($relation);
-        $identifier = [
-            'type' => $schema->getType(),
-            'id'   => $schema->getKey($relation),
-        ];
+        if ($relation) {
+            $schema = $response->api->getSchema($relation);
+            $identifier = [
+                'type' => $schema->getType(),
+                'id'   => $schema->getKey($relation),
+            ];
 
-        $items['data'][] = $identifier;
-        $response->addRelation($schema->getType(), $schema->getKey($relation),
-            $schema->toResource($relation, $includes, $response));
-
+            $items['data'] = $identifier;
+            $response->addRelation($schema->getType(), $schema->getKey($relation),
+                $schema->toResource($relation, $includes, $response));
+        }
         return $items;
     }
 }

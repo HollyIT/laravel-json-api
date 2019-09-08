@@ -124,6 +124,7 @@ class ResourceCollectionResponse extends ResourceResponse
         }
         $builder = $this->schema->createBuilder($this);
         $collection = $builder->paginate($this->perPage);
+
         $this->data['data'] = [];
         foreach ($collection as $resource) {
             $this->data['data'][] = $this->schema->toResource($resource, $this->includes, $this);
