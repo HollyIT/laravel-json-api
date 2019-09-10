@@ -3,16 +3,23 @@
 namespace Hollyit\LaravelJsonApi\Filters;
 
 use Hollyit\LaravelJsonApi\QueryValidator;
+use App\Resources\Customers\Traits\HasCustomerSearch;
 
 class SearchFilter extends BaseFilter
 {
+    use HasCustomerSearch;
     /** @var array */
     protected $searchFields = [];
 
-    public function __construct($key, $field = null)
+    public function __construct($key, $searchFields = [])
     {
-        parent::__construct($key, $field);
-        $this->searchFields[] = $field;
+        if (!is_array($searchFields)) {
+            $searchFields = [];
+        }
+        parent::__construct($key, $key);
+        $this->searchFields= $searchFields;
+
+
     }
 
     public function addSearchField($fields)
@@ -37,7 +44,7 @@ class SearchFilter extends BaseFilter
         $builder->where(function ($sq) {
             /** @var \Illuminate\Database\Eloquent\Builder $sq */
             $sq->orWhere($this->field, 'LIKE', '%'.$this->value.'%');
-            foreach ($this->searchFields as $field) {
+            foreach (array_filter($this->searchFields) as $field) {
                 $sq->orWhere($field, 'LIKE', '%'.$this->value.'%');
             }
         });

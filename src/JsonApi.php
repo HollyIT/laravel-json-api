@@ -17,10 +17,10 @@ class JsonApi
      * @param $ident
      * @param $instanceClass
      */
-    public static function resourceRoute($name, $ident, $instanceClass)
+    public static function resourceRoute($name, $ident, $instanceClass, $closure=null)
     {
         $controller = config('jsonapi.default_controller');
-        Route::get($name, [
+        $indexRoute = Route::get($name, [
             'as'                => $name.'.index',
             'uses'              => $controller.'@index',
             'json_api_resource' => $instanceClass,
@@ -28,7 +28,7 @@ class JsonApi
         ])
             ->middleware(JsonResponseMiddleware::class);
 
-        Route::get($name.'/{'.$ident.'}', [
+        $viewRoute = Route::get($name.'/{'.$ident.'}', [
             'as'                => $name.'.show',
             'uses'              => $controller.'@index',
             'json_api_resource' => $instanceClass,
@@ -36,6 +36,10 @@ class JsonApi
             'json_api_ident'    => $ident,
         ])
             ->middleware(JsonResponseMiddleware::class);
+
+        if (is_callable($closure)) {
+            $closure($indexRoute, $viewRoute);
+        }
     }
 
     /**
@@ -45,7 +49,6 @@ class JsonApi
      */
     public function getSchema($class, $version = 1)
     {
-
         $className = is_string($class) ? $class : get_class($class);
         if (! isset($this->instances[$className.$version])) {
             $name = forward_static_call([$className, 'getApiSchema'], $version);

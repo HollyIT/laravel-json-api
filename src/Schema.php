@@ -296,10 +296,20 @@ abstract class Schema
     protected function querySort($builder, $sort)
     {
         $sort = $sort ?: $this->defaultSort;
-        if ($sort) {
-            $sortParts = $this->parseSortData($sort);
 
-            $builder->orderBy($sortParts[0], $sortParts[1]);
+        if ($sort) {
+
+            $sortParts = $this->parseSortData($sort);
+            $field = isset($this->sorts[$sortParts[0]]) ? $this->sorts[$sortParts[0]] : null;
+            if ($field) {
+                if (is_callable($field)) {
+                    call_user_func($field, $builder, $sortParts[1]);
+                } else {
+                    $builder->orderBy($field, $sortParts[1]);
+                }
+
+            }
+
         }
 
         return $this;
