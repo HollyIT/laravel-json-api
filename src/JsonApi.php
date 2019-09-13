@@ -2,8 +2,7 @@
 
 namespace Hollyit\LaravelJsonApi;
 
-use Illuminate\Support\Facades\Route;
-use Hollyit\LaravelJsonApi\Middleware\JsonResponseMiddleware;
+use Hollyit\LaravelJsonApi\Routing\RouteRegistrar;
 
 class JsonApi
 {
@@ -13,33 +12,19 @@ class JsonApi
     protected $instances = [];
 
     /**
-     * @param $name
-     * @param $ident
      * @param $instanceClass
+     * @param  null  $closure
+     * @return \Hollyit\LaravelJsonApi\Routing\RouteRegistrar
      */
-    public static function resourceRoute($name, $ident, $instanceClass, $closure=null)
+    public function resourceRoute($instanceClass, $closure = null)
     {
-        $controller = config('jsonapi.default_controller');
-        $indexRoute = Route::get($name, [
-            'as'                => $name.'.index',
-            'uses'              => $controller.'@index',
-            'json_api_resource' => $instanceClass,
-            'json_api_method'   => 'index',
-        ])
-            ->middleware(JsonResponseMiddleware::class);
 
-        $viewRoute = Route::get($name.'/{'.$ident.'}', [
-            'as'                => $name.'.show',
-            'uses'              => $controller.'@index',
-            'json_api_resource' => $instanceClass,
-            'json_api_method'   => 'show',
-            'json_api_ident'    => $ident,
-        ])
-            ->middleware(JsonResponseMiddleware::class);
-
+        $registrar = new RouteRegistrar($this->getSchema($instanceClass));
         if (is_callable($closure)) {
-            $closure($indexRoute, $viewRoute);
+            call_user_func($closure, $registrar);
         }
+
+        return $registrar;
     }
 
     /**

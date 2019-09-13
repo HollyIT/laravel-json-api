@@ -2,7 +2,6 @@
 
 namespace Hollyit\LaravelJsonApi;
 
-use App\BaseSchema;
 use Illuminate\Support\Str;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
@@ -176,56 +175,6 @@ abstract class Schema
         return isset($this->relations[$relation]);
     }
 
-    public function addIncludes($includes, $builder, $prefix = '')
-    {
-        foreach ($includes as $include) {
-            echo $include.PHP_EOL;
-            if (stripos($include, '.')) {
-                echo PHP_EOL;
-                list($resource, $trail) = explode('.', $include, 2);
-                $relation = $this->getRelation($resource);
-                if ($relation) {
-                    $schema = $this->api->getSchema($relation->getResourceClass());
-                    $prefix .= $relation->getRelationName().'.';
-                    $schema->addIncludes([$trail], $builder, $prefix);
-                }
-            } elseif ($relation = $this->getRelation($include)) {
-                $relation->addInclude($builder, $prefix);
-            }
-        }
-    }
-
-    public function prepareIncludes($includes)
-    {
-        $items = [];
-        foreach ($includes as $include) {
-            Arr::set($items, $include, $include);
-        }
-
-        return $this->gatherIncludes($items, $this);
-    }
-
-    protected function gatherIncludes($includes, Schema $schema, $prefix = '')
-    {
-
-        $results = [];
-
-        foreach ($includes as $name => $children) {
-            $relation = $schema->getRelation($name);
-            if ($relation) {
-                $name = $relation->getRelationName();
-                $results[] = $prefix.$name;
-                if (is_array($children)) {
-                    $newSchema = $this->api->getSchema($relation->getResourceClass());
-                    $cResults = $this->gatherIncludes($children, $newSchema, $prefix.$name.'.');
-                    $results = array_merge($results, $cResults);
-                }
-            }
-        }
-
-        return $results;
-    }
-
     /**
      * @param  \Hollyit\LaravelJsonApi\ResourceCollectionResponse  $resource
      * @return \Illuminate\Database\Eloquent\Builder
@@ -233,10 +182,9 @@ abstract class Schema
     public function createBuilder(ResourceCollectionResponse $resource)
     {
 
-        $includes = $this->prepareIncludes($resource->includes);
-
+        $includes = new IncludesBuilder($this, $resource->includes);
         $builder = $this->getBuilder($resource);
-        $builder->with($includes);
+        $builder->with($includes->buildIncludes());
         foreach ($this->filters as $filter) {
             $filter->query($builder);
         }
@@ -255,28 +203,6 @@ abstract class Schema
     protected function getBuilder($resource)
     {
         return $this->instance->newQuery();
-    }
-
-    public function loadRelation($relation, $resource, $prefix = '')
-    {
-        if (stripos($relation, '.')) {
-
-            list($resourceName, $trail) = explode('.', $relation, 2);
-            $relationInstance = $this->getRelation($resourceName);
-
-            if ($relationInstance) {
-
-                $schema = $this->api->getSchema($relationInstance->getResourceClass());
-
-                $prefix .= $relationInstance->getRelationName().'.';
-
-                $schema->loadRelation($trail, $resource, $prefix);
-            }
-        } else {
-            echo "l->$relation ";
-            $this->getRelation($relation)
-                ->loadRelation($resource, $prefix);
-        }
     }
 
     /**
@@ -307,9 +233,7 @@ abstract class Schema
                 } else {
                     $builder->orderBy($field, $sortParts[1]);
                 }
-
             }
-
         }
 
         return $this;
@@ -455,5 +379,15 @@ abstract class Schema
         $validator->addSortRule($sort, $options);
 
         return $this;
+    }
+
+    public function routeIdent()
+    {
+        return Str::snake(class_basename($this->instance));
+    }
+
+    public function routePrefix()
+    {
+        return Str::plural($this->getType());
     }
 }

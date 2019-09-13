@@ -157,13 +157,8 @@ class ResourceResponse implements Responsable
     protected function loadIncludes()
     {
         $this->validateIncludes();
-        $includes = $this->schema->prepareIncludes($this->includes);
-        foreach ($includes as $key => $include) {
-            if ($this->resource->relationLoaded($include)) {
-                unset($includes[$key]);
-            }
-        }
-        $this->resource->load($includes);
+        $includes = new IncludesBuilder($this->schema, $this->includes);
+        $this->resource->load($includes->buildIncludes());
     }
 
     public function validateIncludes()

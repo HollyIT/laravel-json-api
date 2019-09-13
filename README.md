@@ -1,5 +1,10 @@
 # Laravel JsonApi
 
+## WARNING
+
+This project is currently very fluid. All APIs are undergoing constant rewrite. Use at
+our own peril!
+
 ## Description
 
 This is an extremely simple JsonApi implementation. It does not follow the spec exactly

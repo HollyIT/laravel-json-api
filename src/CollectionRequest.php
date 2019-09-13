@@ -41,9 +41,11 @@ class CollectionRequest extends Request
 
                 break;
 
-            case 'show':
+            case 'view':
                 $intent = $route->parameter($route->getAction('json_api_ident'));
+                if (! is_object($intent)) {
 
+                }
                 if (! $intent) {
                     abort(404);
                 }
