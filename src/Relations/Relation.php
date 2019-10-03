@@ -3,7 +3,6 @@
 namespace Hollyit\LaravelJsonApi\Relations;
 
 use JsonApi;
-use Closure;
 use Hollyit\LaravelJsonApi\Schema;
 use Hollyit\LaravelJsonApi\ResourceResponse;
 
@@ -14,6 +13,7 @@ abstract class Relation
 
     /** @var string */
     public $relationName;
+
 
     /** @var string */
     protected $resourceClass;
@@ -48,12 +48,15 @@ abstract class Relation
      * @param  \Closure|null  $queryCallback
      * @return Relation
      */
-    public function setQueryCallback(?Closure $queryCallback): Relation
+    public function setQueryCallback(?\Closure $queryCallback): Relation
     {
         $this->queryCallback = $queryCallback;
 
         return $this;
     }
+
+
+
 
     /**
      * @return mixed
@@ -91,16 +94,14 @@ abstract class Relation
      * @param  \Hollyit\LaravelJsonApi\Schema  $schema
      * @return \Closure|null
      */
-    public function getQuery(Schema $schema)
-    {
+    public function getQuery(Schema $schema) {
         return $this->queryCallback;
     }
 
     /**
      * @return Schema
      */
-    public function relationSchema()
-    {
+    public function relationSchema() {
         return app(\Hollyit\LaravelJsonApi\JsonApi::class)->getSchema($this->resourceClass);
     }
 }

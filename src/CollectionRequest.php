@@ -43,7 +43,7 @@ class CollectionRequest extends Request
 
             case 'view':
                 $intent = $route->parameter($route->getAction('json_api_ident'));
-                if (! is_object($intent)) {
+                if (!is_object($intent)) {
 
                 }
                 if (! $intent) {

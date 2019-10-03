@@ -23,7 +23,6 @@ class JsonApi
         if (is_callable($closure)) {
             call_user_func($closure, $registrar);
         }
-
         return $registrar;
     }
 
